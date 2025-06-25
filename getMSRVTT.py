@@ -19,6 +19,7 @@ save_dir = "msrvtt_clips"
 os.makedirs(save_dir, exist_ok=True)
 
 # Try to download and trim the first 3 videos
+# If you want to get all, use `df.iterrows()`
 sample_df = df.head(3)
 
 for index, row in sample_df.iterrows():
