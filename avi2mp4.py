@@ -1,7 +1,7 @@
 import cv2
 
-input_path = 'assets/ucf101/Basketball/v_Basketball_g01_c01.avi'
-output_path = 'assets/ucf101/mp4/v_Basketball_g01_c01.mp4'
+input_path = 'v_GolfSwing_g01_c01.avi'
+output_path = 'v_GolfSwing_g01_c01.mp4'
 
 cap = cv2.VideoCapture(input_path)
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
