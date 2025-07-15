@@ -2,7 +2,7 @@ import cv2
 import os
 
 # Input and output video paths
-input_path = "v_GolfSwing_g01_c01.avi"
+input_path = "tshirtman.mp4"
 output_path = "output_targetfps.mp4"
 
 # Target FPS
