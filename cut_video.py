@@ -22,7 +22,7 @@ if CHECKER == False:
 
 else:
     # Information about the short clip
-    s_clip = VideoFileClip("/scratch/rs02358/ved_dissertation/MotionDirector/outputs/inference/A_monkey_is_playing_golf_in_Times_Square_New_York_785490.mp4")
+    s_clip = VideoFileClip("animation-0019_100steps.mp4")
 
     print(f"Short clip duration: {s_clip.duration} seconds")
     print(f"Short clip FPS: {s_clip.fps}")
