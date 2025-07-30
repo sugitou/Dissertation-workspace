@@ -1,0 +1,108 @@
+import os
+# Set environment variables for Hugging Face cache
+os.environ["HF_HOME"] = "/scratch/rs02358/huggingface"
+os.environ["TMPDIR"] = "/scratch/rs02358/tmp"
+
+import gradio as gr
+from evalTandV import evaluate_video, get_video_info
+
+prompt_list_default = [
+    "an animal walking in nature",
+    "a cartoon character in a landscape",
+    "a person running in a city",
+    "a bird flying in the sky",
+]
+
+def run_evaluation(video_path, prompt, fps, prompt_list_str):
+    import tempfile
+
+    # Convert prompts to list
+    prompt_list = [p.strip() for p in prompt_list_str.strip().split("\n") if p.strip()]
+
+    # Run your evaluation function
+    result = evaluate_video(video_path, prompt, prompt_list, fps=fps)
+
+    return (
+        f"{result['clip_score']:.4f}",
+        f"{result['pick_score']:.4f}",
+        f"{result['Tem-Con']:.4f}",
+        f"{result['appearance_diversity']:.4f}"
+    )
+
+
+def update_video_info(video_path):
+    return get_video_info(video_path)
+
+if __name__ == "__main__":
+    with gr.Blocks(css="""
+        .orange-button {
+            background-color: #ff7f0e !important; 
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+
+        .orange-button:hover {
+            background-color: #e66900 !important;
+            color: white;
+        }
+        """) as demo:
+
+        gr.Markdown("##  Video Evaluation with Diffusion-Based Metrics")
+        
+        with gr.Row():
+            video_input = gr.Video(label="Upload Video")
+
+            with gr.Column():
+                with gr.Group():
+                    gr.Markdown("###  Video Info")
+
+                    with gr.Row():
+                        video_filename_output = gr.Textbox(label="Filename", interactive=False)
+                        video_duration_output = gr.Textbox(label="Duration (sec)", interactive=False)
+
+                    with gr.Row():
+                        video_frames_output = gr.Textbox(label="Total Frames", interactive=False)
+                        video_fps_output = gr.Textbox(label="FPS", interactive=False)
+                        video_resolution_output = gr.Textbox(label="Resolution (width)x(height)", interactive=False)
+                
+                fps_input = gr.Slider(1, 30, value=1, step=1, label="FPS (for frame extraction)")
+        
+        prompt_input = gr.Textbox(
+            label="Main Prompt (e.g., 'a bear is walking, anime style')",
+            value="a bear is walking, anime style",
+            placeholder="Enter the main prompt for evaluation",
+            lines=1)
+        
+        prompt_list_input = gr.Textbox(
+            label="Additional Prompts for Appearance Diversity (one per line)",
+            value="\n".join(prompt_list_default),
+            lines=6,
+        )
+        
+        run_button = gr.Button("Run Evaluation", elem_classes="orange-button")
+        
+        with gr.Row():
+            clip_score_output = gr.Textbox(label="CLIP Score (Tex-Ali)")
+            pick_score_output = gr.Textbox(label="PickScore")
+            temporal_output = gr.Textbox(label="Temporal Consistency (Tem-Con)")
+            appearance_output = gr.Textbox(label="Appearance Diversity (Appe-Div)")
+
+        run_button.click(
+            run_evaluation,
+            inputs=[video_input, prompt_input, fps_input, prompt_list_input],
+            outputs=[clip_score_output, pick_score_output, temporal_output, appearance_output]
+        )
+
+        video_input.change(
+            update_video_info,
+            inputs=video_input,
+            outputs=[
+                video_filename_output,
+                video_duration_output,
+                video_frames_output,
+                video_fps_output,
+                video_resolution_output
+            ]
+        )
+
+    demo.launch()

@@ -19,6 +19,23 @@ clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").eval().to
 pick_processor = AutoProcessor.from_pretrained("laion/CLIP-ViT-H-14-laion2B-s32B-b79K")
 pick_model = AutoModel.from_pretrained("yuvalkirstain/PickScore_v1").eval().to("cuda")
 
+# Extract information about the video
+def get_video_info(video_path):
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        return "Could not open video", "", "", "", ""
+    
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    duration = frame_count / fps if fps > 0 else 0
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    resolution = f"{width}x{height}"
+
+    cap.release()
+    return os.path.basename(video_path), f"{duration:.2f} sec", str(frame_count), f"{fps:.2f}", resolution
+
+
 def extract_frames(video_path: str, output_dir: str, fps: int = 1):
     os.makedirs(output_dir, exist_ok=True)
     cap = cv2.VideoCapture(video_path)
