@@ -29,6 +29,8 @@ def extract_frames(video_path: str, output_dir: str, fps: int = 1):
     if video_fps <= 0:
         raise ValueError(f"Invalid FPS detected in video: {video_fps}")
     frame_interval = max(int(video_fps // fps), 1)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    print(f"vudeo_fps: {video_fps}, frame_interval: {frame_interval}, total_frames: {total_frames}")
     count = 0
     saved = 0
 
@@ -44,6 +46,7 @@ def extract_frames(video_path: str, output_dir: str, fps: int = 1):
 
     cap.release()
 
+# Calculate CLIP similarity score for video frames with a given text prompt 
 def calculate_clip_score_video(frame_dir, text):
     scores = []
     for filename in sorted(os.listdir(frame_dir)):
@@ -60,6 +63,8 @@ def calculate_clip_score_video(frame_dir, text):
                 scores.append(score)
     return sum(scores) / len(scores) if scores else 0.0
 
+
+# Calculate PickScore for video frames with a given text prompt
 def calculate_pickscore_video(frame_dir, text):
     scores = []
     for filename in sorted(os.listdir(frame_dir)):
@@ -84,15 +89,72 @@ def calculate_pickscore_video(frame_dir, text):
 
     return sum(scores) / len(scores) if scores else 0.0
 
-def evaluate_video(video_path, prompt, frame_dir="./frames", fps=1):
+
+# Calculate temporal consistency score for video frames between Frame t and Frame t+1
+def calculate_temporal_consistency(frame_dir):
+    embeddings = []
+    for filename in sorted(os.listdir(frame_dir)):
+        if filename.lower().endswith((".png", ".jpg", ".jpeg")):
+            image = Image.open(os.path.join(frame_dir, filename)).convert("RGB")
+            inputs = clip_processor(images=[image], return_tensors="pt").to("cuda")
+            with torch.no_grad():
+                emb = clip_model.get_image_features(**inputs)
+                emb = emb / emb.norm(p=2, dim=-1, keepdim=True)
+                embeddings.append(emb)
+
+    similarities = [
+        torch.cosine_similarity(embeddings[i], embeddings[i + 1]).item()
+        for i in range(len(embeddings) - 1)
+    ]
+    return sum(similarities) / len(similarities) if similarities else 0.0
+
+
+# Calculate appearance diversity score for video frames with a list of prompts
+def calculate_appearance_diversity(frame_dir, prompt_list):
+    scores = []
+    for prompt in prompt_list:
+        text_inputs = clip_processor(text=[prompt], return_tensors="pt").to("cuda")
+        with torch.no_grad():
+            # Obtain text embedding
+            text_emb = clip_model.get_text_features(**text_inputs)
+            text_emb = text_emb / text_emb.norm(p=2, dim=-1, keepdim=True)
+
+        for filename in sorted(os.listdir(frame_dir)):
+            if filename.lower().endswith((".png", ".jpg", ".jpeg")):
+                image = Image.open(os.path.join(frame_dir, filename)).convert("RGB")
+                inputs = clip_processor(images=[image], return_tensors="pt").to("cuda")
+                with torch.no_grad():
+                    # Obtain image embedding
+                    image_emb = clip_model.get_image_features(**inputs)
+                    image_emb = image_emb / image_emb.norm(p=2, dim=-1, keepdim=True)
+                
+                # calculate cosine similarity score
+                score = torch.cosine_similarity(text_emb, image_emb).item()
+                scores.append(score)
+    return sum(scores) / len(scores) if scores else 0.0
+
+
+def evaluate_video(video_path, prompt, prompt_list, frame_dir="./frames", fps=1):
     extract_frames(video_path, frame_dir, fps=fps)
     clip_score = calculate_clip_score_video(frame_dir, prompt)
     pick_score = calculate_pickscore_video(frame_dir, prompt)
+    temporal_consistency = calculate_temporal_consistency(frame_dir)
+    appearance_diversity = calculate_appearance_diversity(frame_dir, prompt_list)
     if RM_FRAME:
         shutil.rmtree(frame_dir)
-    return {"clip_score": clip_score, "pick_score": pick_score}
+    return {"clip_score": clip_score, "pick_score": pick_score, "Tem-Con": temporal_consistency, "appearance_diversity": appearance_diversity}
+
 
 if __name__ == "__main__":
-    result = evaluate_video("animation-0019_100steps.mp4", "a bear is walking, anime style")
+    prompt_list = [
+        "a bear is walking, anime style",
+        "an animal walking in nature",
+        "a cartoon character in a landscape",
+        "a person running in a city",
+        "a bird flying in the sky",
+    ]
+    result = evaluate_video("animation-0019_100steps.mp4", "a bear is walking, anime style", prompt_list)
     print(f"CLIP Score: {result['clip_score']:.4f}")
     print(f"PickScore : {result['pick_score']:.4f}")
+    print(f"Temporal Consistency: {result['Tem-Con']:.4f}")
+    print(f"Appearance Diversity: {result['appearance_diversity']:.4f}")
