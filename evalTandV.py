@@ -5,12 +5,13 @@ os.environ["TMPDIR"] = "/scratch/rs02358/tmp"
 
 import cv2
 import subprocess
+import tempfile
 from PIL import Image
 import torch
 from transformers import CLIPProcessor, CLIPModel, AutoProcessor, AutoModel
 
 import shutil
-RM_FRAME = True  # Set to True to remove frames after evaluation
+RM_FRAME = False  # Set to True to remove frames after evaluation
 
 # initialize models
 clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
@@ -18,6 +19,36 @@ clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").eval().to
 
 pick_processor = AutoProcessor.from_pretrained("laion/CLIP-ViT-H-14-laion2B-s32B-b79K")
 pick_model = AutoModel.from_pretrained("yuvalkirstain/PickScore_v1").eval().to("cuda")
+
+
+# Convert video codec to a browser-compatible MP4 format
+# Unstable, that's why don't use it in displayEval.py 
+def convert_codec(input_path):
+    if not input_path.endswith(".mp4"):
+        return input_path  # no conversion needed
+
+    # Use ffmpeg to convert the video
+    output_path = tempfile.mktemp(suffix=".mp4")
+
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", input_path,
+        "-c:v", "libx264",        # video codec: H.264
+        "-preset", "ultrafast",   # preset for fast encoding
+        "-c:a", "aac",            # audio codec: AAC
+        "-movflags", "+faststart",  # for better streaming
+        output_path
+    ]
+
+    try:
+        result = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
+            raise RuntimeError(f"FFmpeg created invalid file: {output_path}")
+        return output_path
+    except Exception as e:
+        print(f"[FFMPEG ERROR] {e}")
+        return input_path  # fallback
+
 
 # Extract information about the video
 def get_video_info(video_path):
@@ -47,7 +78,7 @@ def extract_frames(video_path: str, output_dir: str, fps: int = 1):
         raise ValueError(f"Invalid FPS detected in video: {video_fps}")
     frame_interval = max(int(video_fps // fps), 1)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    print(f"vudeo_fps: {video_fps}, frame_interval: {frame_interval}, total_frames: {total_frames}")
+    
     count = 0
     saved = 0
 
