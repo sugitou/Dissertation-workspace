@@ -6,6 +6,7 @@ os.environ["TMPDIR"] = "/scratch/rs02358/tmp"
 import cv2
 import subprocess
 import tempfile
+import numpy as np
 from PIL import Image
 import torch
 from transformers import CLIPProcessor, CLIPModel, AutoProcessor, AutoModel
@@ -182,15 +183,55 @@ def calculate_appearance_diversity(frame_dir, prompt_list):
     return sum(scores) / len(scores) if scores else 0.0
 
 
-def evaluate_video(video_path, prompt, prompt_list, frame_dir="./frames", fps=1):
-    extract_frames(video_path, frame_dir, fps=fps)
-    clip_score = calculate_clip_score_video(frame_dir, prompt)
-    pick_score = calculate_pickscore_video(frame_dir, prompt)
-    temporal_consistency = calculate_temporal_consistency(frame_dir)
-    appearance_diversity = calculate_appearance_diversity(frame_dir, prompt_list)
-    if RM_FRAME:
-        shutil.rmtree(frame_dir)
-    return {"clip_score": clip_score, "pick_score": pick_score, "Tem-Con": temporal_consistency, "appearance_diversity": appearance_diversity}
+
+def calculate_embedding_distance(frame_dir, prompt):
+    # Obtain average image embedding from all frames
+    image_embeds = []
+    for filename in sorted(os.listdir(frame_dir)):
+        if filename.lower().endswith((".png", ".jpg", ".jpeg")):
+            image = Image.open(os.path.join(frame_dir, filename)).convert("RGB")
+            inputs = clip_processor(images=[image], return_tensors="pt").to(clip_model.device)
+            with torch.no_grad():
+                image_emb = clip_model.get_image_features(**inputs)
+                image_emb = image_emb / image_emb.norm(p=2, dim=-1, keepdim=True)
+                image_embeds.append(image_emb.cpu().numpy().flatten())
+    if not image_embeds:
+        return None
+    avg_image_emb = np.mean(image_embeds, axis=0)
+
+    # Obtain text embedding for the prompt
+    text_inputs = clip_processor(text=[prompt], return_tensors="pt").to(clip_model.device)
+    with torch.no_grad():
+        text_emb = clip_model.get_text_features(**text_inputs)
+        text_emb = text_emb / text_emb.norm(p=2, dim=-1, keepdim=True)
+    text_emb = text_emb.cpu().numpy().flatten()
+
+    # Calculate cosine similarity and distance
+    sim = np.dot(avg_image_emb, text_emb) / (np.linalg.norm(avg_image_emb) * np.linalg.norm(text_emb))
+    dist = 1 - sim  # cosine distance
+    return dist
+
+
+def evaluate_video(video_path, prompt, frame_dir="./frames", fps=1):
+    # Create a temporary directory for frames
+    frame_dir = tempfile.mkdtemp(prefix="frames_")
+    
+    try:
+        extract_frames(video_path, frame_dir, fps=fps)
+        clip_score = calculate_clip_score_video(frame_dir, prompt)
+        pick_score = calculate_pickscore_video(frame_dir, prompt)
+        temporal_consistency = calculate_temporal_consistency(frame_dir)
+        embedding_distance = calculate_embedding_distance(frame_dir, prompt)
+
+        return {
+            "clip_score": clip_score, 
+            "pick_score": pick_score, 
+            "Tem-Con": temporal_consistency, 
+            "embedding_distance": embedding_distance
+        }
+
+    finally:
+        shutil.rmtree(frame_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":
@@ -201,8 +242,8 @@ if __name__ == "__main__":
         "a person running in a city",
         "a bird flying in the sky",
     ]
-    result = evaluate_video("animation-0019_100steps.mp4", "a bear is walking, anime style", prompt_list)
+    result = evaluate_video("animation-0019_100steps.mp4", "a bear is walking, anime style")
     print(f"CLIP Score: {result['clip_score']:.4f}")
     print(f"PickScore : {result['pick_score']:.4f}")
     print(f"Temporal Consistency: {result['Tem-Con']:.4f}")
-    print(f"Appearance Diversity: {result['appearance_diversity']:.4f}")
+    print(f"Embedding Distance: {result['embedding_distance']:.4f}")

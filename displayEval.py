@@ -18,18 +18,15 @@ prompt_list_default = [
 ]
 
 
-def run_evaluation(video_path, prompt, fps, prompt_list_str):
-    # Convert prompts to list
-    prompt_list = [p.strip() for p in prompt_list_str.strip().split("\n") if p.strip()]
-
+def run_evaluation(video_path, prompt, fps):
     # Run your evaluation function
-    result = evaluate_video(video_path, prompt, prompt_list, fps=fps)
+    result = evaluate_video(video_path, prompt, fps=fps)
 
     return (
         f"{result['clip_score']:.4f}",
         f"{result['pick_score']:.4f}",
         f"{result['Tem-Con']:.4f}",
-        f"{result['appearance_diversity']:.4f}"
+        f"{result['embedding_distance']:.4f}"
     )
 
 
@@ -44,29 +41,23 @@ def update_video_info(video_path):
     return video_path, filename, duration, frame_count, actual_fps, resolution
 
 
-def update_result_table(
-    video, prompt, fps, prompt_list_str, history_df
-):
-    prompt_list = [p.strip() for p in prompt_list_str.strip().split("\n") if p.strip()]
+def update_result_table(video, prompt, fps, history_df):
     video_path = video
-    result = evaluate_video(video_path, prompt, prompt_list, fps=fps)
+    result = evaluate_video(video_path, prompt, fps=fps)
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     # Get video information
     filename, duration, frame_count, actual_fps, resolution = get_video_info(video_path)
-
-    additional_prompt_str = "\n".join(prompt_list)
 
     # Define a new row with the evaluation results
     new_row = pd.DataFrame([{
         "Timestamp": timestamp,
         "Filename": filename,
         "Prompt": prompt,
-        "Additional Prompts": additional_prompt_str,
         "CLIP Score": round(result["clip_score"], 4),
         "PickScore": round(result["pick_score"], 4),
         "Temporal Consistency": round(result["Tem-Con"], 4),
-        "Appearance Diversity": round(result["appearance_diversity"], 4),
+        "Embedding Distance": round(result["embedding_distance"], 4),
         "FPS (Video)": actual_fps,
         "FPS (Eval)": fps,
         "Frames": frame_count,
@@ -152,16 +143,10 @@ if __name__ == "__main__":
                 fps_input = gr.Slider(1, 30, value=1, step=1, label="FPS (for frame extraction)")
         
         prompt_input = gr.Textbox(
-            label="Main Prompt (e.g., 'a bear is walking, anime style')",
+            label="Prompt (e.g., 'a bear is walking, anime style')",
             value="a bear is walking, anime style",
             placeholder="Enter the main prompt for evaluation",
             lines=1)
-        
-        prompt_list_input = gr.Textbox(
-            label="Additional Prompts for Appearance Diversity (one per line)",
-            value="\n".join(prompt_list_default),
-            lines=6,
-        )
         
         run_button = gr.Button("Run Evaluation", elem_classes="orange-button")
         
@@ -169,26 +154,26 @@ if __name__ == "__main__":
             clip_score_output = gr.Textbox(label="CLIP Score (Tex-Ali)")
             pick_score_output = gr.Textbox(label="PickScore")
             temporal_output = gr.Textbox(label="Temporal Consistency (Tem-Con)")
-            appearance_output = gr.Textbox(label="Appearance Diversity (Appe-Div)")
+            embedding_output = gr.Textbox(label="Embedding Distance")
         
         run_button.click(
             run_evaluation,
-            inputs=[video_input, prompt_input, fps_input, prompt_list_input],
-            outputs=[clip_score_output, pick_score_output, temporal_output, appearance_output]
+            inputs=[video_input, prompt_input, fps_input],
+            outputs=[clip_score_output, pick_score_output, temporal_output, embedding_output]
         )
 
         history_df = gr.State(value=pd.DataFrame(columns=[
-            "Timestamp", "Filename", "Prompt", "Additional Prompts",
-            "CLIP Score", "PickScore", "Temporal Consistency", "Appearance Diversity", 
+            "Timestamp", "Filename", "Prompt",
+            "CLIP Score", "PickScore", "Temporal Consistency", "Embedding Distance", 
             "FPS (Video)", "FPS (Eval)", "Frames", "Resolution", "Duration"
         ]))
 
         result_table = gr.Dataframe(
             label="Evaluation History",
             headers=[
-                "Timestamp", "Filename", "Prompt", "Additional Prompts",
+                "Timestamp", "Filename", "Prompt",
                 "CLIP Score", "PickScore", "Temporal Consistency", 
-                "Appearance Diversity", "FPS (Video)", "FPS (Eval)",
+                "Embedding Distance", "FPS (Video)", "FPS (Eval)",
                 "Frames", "Resolution", "Duration"
             ],
             interactive=True,
@@ -214,7 +199,7 @@ if __name__ == "__main__":
 
         run_button.click(
             update_result_table,
-            inputs=[video_input, prompt_input, fps_input, prompt_list_input, history_df],
+            inputs=[video_input, prompt_input, fps_input, history_df],
             outputs=[history_df, result_table]
         )
 
