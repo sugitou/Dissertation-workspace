@@ -2,11 +2,11 @@ import cv2
 import os
 
 # Input and output video paths
-input_path = "tshirtman.mp4"
-output_path = "output_targetfps.mp4"
+input_path = "/scratch/rs02358/ved_dissertation/Datasets_from_Internet/UCF101/UCF-Benchmark/v_ApplyEyeMakeup_g12_c05.avi"
+output_path = "/scratch/rs02358/ved_dissertation/Datasets_from_Internet/UCF101/UCF-Benchmark/v_ApplyEyeMakeup_g12_c05.mp4"
 
 # Target FPS
-target_fps = 8
+target_fps = 25
 
 
 # Open input video
