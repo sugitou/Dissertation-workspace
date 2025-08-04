@@ -10,13 +10,6 @@ import pandas as pd
 from datetime import datetime
 from evalTandV import evaluate_video, get_video_info #, convert_codec
 
-prompt_list_default = [
-    "an animal walking in nature",
-    "a cartoon character in a landscape",
-    "a person running in a city",
-    "a bird flying in the sky",
-]
-
 
 def run_evaluation(video_path, prompt, fps):
     # Run your evaluation function

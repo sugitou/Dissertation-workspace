@@ -4,6 +4,7 @@ os.environ["HF_HOME"] = "/scratch/rs02358/huggingface"
 os.environ["TMPDIR"] = "/scratch/rs02358/tmp"
 
 import cv2
+import shutil
 import subprocess
 import tempfile
 import numpy as np
@@ -11,8 +12,6 @@ from PIL import Image
 import torch
 from transformers import CLIPProcessor, CLIPModel, AutoProcessor, AutoModel
 
-import shutil
-RM_FRAME = False  # Set to True to remove frames after evaluation
 
 # initialize models
 clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
