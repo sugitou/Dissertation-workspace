@@ -84,6 +84,16 @@ def apply_table_edits(edited_df):
     return edited_df
 
 
+def clear_history():
+    empty_df = pd.DataFrame(columns=[
+        "Timestamp", "Filename", "Prompt",
+        "CLIP Score", "PickScore", "Temporal Consistency", 
+        "Embedding Distance", "FPS (Video)", "FPS (Eval)",
+        "Frames", "Resolution", "Duration"
+    ])
+    return empty_df, empty_df
+
+
 if __name__ == "__main__":
     with gr.Blocks(css="""
         .orange-button {
@@ -111,6 +121,14 @@ if __name__ == "__main__":
         }
         .green-button:hover {
             background-color: #1d7f1d !important;
+        }
+        .red-button {
+            background-color: #d62728 !important;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+        .red-button:hover {
+            background-color: #a91d1d !important;
         }
     """) as demo:
 
@@ -148,12 +166,6 @@ if __name__ == "__main__":
             pick_score_output = gr.Textbox(label="PickScore")
             temporal_output = gr.Textbox(label="Temporal Consistency (Tem-Con)")
             embedding_output = gr.Textbox(label="Embedding Distance")
-        
-        run_button.click(
-            run_evaluation,
-            inputs=[video_input, prompt_input, fps_input],
-            outputs=[clip_score_output, pick_score_output, temporal_output, embedding_output]
-        )
 
         history_df = gr.State(value=pd.DataFrame(columns=[
             "Timestamp", "Filename", "Prompt",
@@ -175,8 +187,22 @@ if __name__ == "__main__":
 
         with gr.Row():
             update_button = gr.Button("Apply Table Edits to History", elem_classes="blue-button")
+            clear_button = gr.Button("Clear Table", elem_classes="red-button")
             save_button = gr.Button("Download as CSV", elem_classes="green-button")
             download_file = gr.File(label="Download CSV")
+
+        # Set up event handlers
+        run_button.click(
+            run_evaluation,
+            inputs=[video_input, prompt_input, fps_input],
+            outputs=[clip_score_output, pick_score_output, temporal_output, embedding_output]
+        )
+
+        run_button.click(
+            update_result_table,
+            inputs=[video_input, prompt_input, fps_input, history_df],
+            outputs=[history_df, result_table]
+        )
 
         update_button.click(
             fn=apply_table_edits,
@@ -184,16 +210,15 @@ if __name__ == "__main__":
             outputs=[history_df]
         )
 
+        clear_button.click(
+            fn=clear_history,
+            outputs=[history_df, result_table]
+        )
+
         save_button.click(
             fn=save_table_to_csv,
             inputs=[history_df],
             outputs=[download_file]
-        )
-
-        run_button.click(
-            update_result_table,
-            inputs=[video_input, prompt_input, fps_input, history_df],
-            outputs=[history_df, result_table]
         )
 
         video_input.change(

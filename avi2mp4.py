@@ -1,7 +1,7 @@
 import cv2
 
-input_path = '/scratch/rs02358/ved_dissertation/Datasets_from_Internet/UCF101/UCF-Benchmark/v_ApplyEyeMakeup_g12_c05.avi'
-output_path = '/scratch/rs02358/ved_dissertation/Datasets_from_Internet/UCF101/UCF-Benchmark/v_ApplyEyeMakeup_g12_c05.mp4'
+input_path = '/scratch/rs02358/ved_dissertation/Datasets_from_Internet/UCF101/UCF-Benchmark/v_CleanAndJerk_g25_c01.avi'
+output_path = '/scratch/rs02358/ved_dissertation/Datasets_from_Internet/UCF101/UCF-Benchmark/v_CleanAndJerk_g25_c01.mp4'
 
 cap = cv2.VideoCapture(input_path)
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
