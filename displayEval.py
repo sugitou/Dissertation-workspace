@@ -8,7 +8,7 @@ import tempfile
 import gradio as gr
 import pandas as pd
 from datetime import datetime
-from evalTandV import evaluate_video, get_video_info #, convert_codec
+from evalUtils import evaluate_video, get_video_info #, convert_codec
 
 
 def run_evaluation(video_path, prompt, fps):
