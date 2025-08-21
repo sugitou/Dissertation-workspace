@@ -269,7 +269,7 @@ def evaluate_video(video_path, prompt, frame_dir="./frames", fps=8):
         extract_frames(video_path, frame_dir, fps=fps)
         clip_score = calculate_clip_score_video(frame_dir, prompt)
         pick_score = calculate_pickscore_video(frame_dir, prompt)
-        temporal_consistency = calculate_temporal_consistency(frame_dir)
+        # temporal_consistency = calculate_temporal_consistency(frame_dir)
         embedding_distance = calculate_embedding_distance(frame_dir, prompt)
         for k in [1, 4, 8, 12, 16, 20, 24]:
             lagk_tc = calculate_temporal_consistency_lag(frame_dir, k=k)
@@ -278,9 +278,8 @@ def evaluate_video(video_path, prompt, frame_dir="./frames", fps=8):
         return {
             "clip_score": clip_score, 
             "pick_score": pick_score, 
-            "Tem-Con": temporal_consistency, 
+            "Tem-Con": lagk_tc_list, 
             "embedding_distance": embedding_distance,
-            "lagk_tc": lagk_tc_list
         }
 
     finally:

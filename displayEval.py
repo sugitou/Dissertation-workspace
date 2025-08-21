@@ -151,7 +151,7 @@ if __name__ == "__main__":
                         video_fps_output = gr.Textbox(label="FPS", interactive=False)
                         video_resolution_output = gr.Textbox(label="Resolution (width)x(height)", interactive=False)
                 
-                fps_input = gr.Slider(1, 30, value=1, step=1, label="FPS (for frame extraction)")
+                fps_input = gr.Slider(1, 30, value=8, step=1, label="FPS (for frame extraction)")
         
         prompt_input = gr.Textbox(
             label="Prompt (e.g., 'a bear is walking, anime style')",
