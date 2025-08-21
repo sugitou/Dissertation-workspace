@@ -3,6 +3,7 @@ import os
 os.environ["HF_HOME"] = "/scratch/rs02358/huggingface"
 os.environ["TMPDIR"] = "/scratch/rs02358/tmp"
 
+import re
 import cv2
 import shutil
 import subprocess
@@ -138,10 +139,18 @@ def calculate_pickscore_video(frame_dir, text):
     return sum(scores) / len(scores) if scores else 0.0
 
 
+def natural_key(s: str):
+    # 数字部分を整数化して分割、例: frame_2 < frame_10
+    return [int(t) if t.isdigit() else t.lower() for t in re.split(r'(\d+)', s)]
+
+
 # Calculate temporal consistency score for video frames between Frame t and Frame t+1
 def calculate_temporal_consistency(frame_dir):
     embeddings = []
-    for filename in sorted(os.listdir(frame_dir)):
+    files = [f for f in os.listdir(frame_dir) if f.lower().endswith((".png", ".jpg", ".jpeg"))]
+    files.sort(key=natural_key)
+
+    for filename in files:
         if filename.lower().endswith((".png", ".jpg", ".jpeg")):
             image = Image.open(os.path.join(frame_dir, filename)).convert("RGB")
             inputs = clip_processor(images=[image], return_tensors="pt").to("cuda")
@@ -173,7 +182,10 @@ def calculate_temporal_consistency_lag(frame_dir, k=1):
     """
     # --- フレーム埋め込み ---
     embeddings = []
-    for filename in sorted(os.listdir(frame_dir)):
+    files = [f for f in os.listdir(frame_dir) if f.lower().endswith((".png", ".jpg", ".jpeg"))]
+    files.sort(key=natural_key)
+
+    for filename in files:
         if filename.lower().endswith((".png", ".jpg", ".jpeg")):
             image = Image.open(os.path.join(frame_dir, filename)).convert("RGB")
             inputs = clip_processor(images=[image], return_tensors="pt").to("cuda")
@@ -280,7 +292,7 @@ if __name__ == "__main__":
         "a person running in a city",
         "a bird flying in the sky",
     ]
-    result = evaluate_video("/scratch/rs02358/ved_dissertation/Datasets_from_Internet/Boxing-pixel_10s.mp4", "A man wearing white tank top practices boxing, punching a red heavy bag in his garage home gym, pixel art style")
+    result = evaluate_video("/scratch/rs02358/ved_dissertation/CCEdit/outputs/tv2v/Thinking/Boxing-pixel_prior0.3_cfg9.mp4", "A man wearing white tank top practices boxing, punching a red heavy bag in his garage home gym, pixel art style")
     print(f"CLIP Score: {result['clip_score']:.4f}")
     print(f"PickScore : {result['pick_score']:.4f}")
     print(f"Temporal Consistency: {result['Tem-Con']:.4f}")
