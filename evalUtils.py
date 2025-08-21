@@ -157,6 +157,43 @@ def calculate_temporal_consistency(frame_dir):
     return sum(similarities) / len(similarities) if similarities else 0.0
 
 
+def calculate_temporal_consistency_lag(frame_dir, k=1):
+    """
+    Temporal consistency score using CLIP embeddings with lag-k frames.
+    
+    Args:
+        frame_dir (str): フレーム画像のディレクトリ
+        clip_model: CLIP のモデル
+        clip_processor: CLIP の前処理
+        device (str): "cuda" または "cpu"
+        k (int): ラグ幅（例: 1=隣接, 2=2フレーム間隔,...）
+    
+    Returns:
+        float: ラグ k の temporal consistency スコア
+    """
+    # --- フレーム埋め込み ---
+    embeddings = []
+    for filename in sorted(os.listdir(frame_dir)):
+        if filename.lower().endswith((".png", ".jpg", ".jpeg")):
+            image = Image.open(os.path.join(frame_dir, filename)).convert("RGB")
+            inputs = clip_processor(images=[image], return_tensors="pt").to("cuda")
+            with torch.no_grad():
+                emb = clip_model.get_image_features(**inputs)
+                emb = emb / emb.norm(p=2, dim=-1, keepdim=True)  # L2正規化
+                embeddings.append(emb)
+    
+    if len(embeddings) <= k:
+        return 0.0  # フレーム数が足りない場合
+    
+    # --- 類似度計算 ---
+    similarities = [
+        torch.cosine_similarity(embeddings[i], embeddings[i + k]).item()
+        for i in range(len(embeddings) - k)
+    ]
+    
+    return sum(similarities) / len(similarities) if similarities else 0.0
+
+
 # Calculate appearance diversity score for video frames with a list of prompts
 def calculate_appearance_diversity(frame_dir, prompt_list):
     scores = []
@@ -221,12 +258,14 @@ def evaluate_video(video_path, prompt, frame_dir="./frames", fps=1):
         pick_score = calculate_pickscore_video(frame_dir, prompt)
         temporal_consistency = calculate_temporal_consistency(frame_dir)
         embedding_distance = calculate_embedding_distance(frame_dir, prompt)
+        lagk_tc = calculate_temporal_consistency_lag(frame_dir, k=8)
 
         return {
             "clip_score": clip_score, 
             "pick_score": pick_score, 
             "Tem-Con": temporal_consistency, 
-            "embedding_distance": embedding_distance
+            "embedding_distance": embedding_distance,
+            "lagk_tc": lagk_tc
         }
 
     finally:
@@ -241,8 +280,9 @@ if __name__ == "__main__":
         "a person running in a city",
         "a bird flying in the sky",
     ]
-    result = evaluate_video("animation-0019_100steps.mp4", "a bear is walking, anime style")
+    result = evaluate_video("/scratch/rs02358/ved_dissertation/Datasets_from_Internet/Boxing-pixel_10s.mp4", "A man wearing white tank top practices boxing, punching a red heavy bag in his garage home gym, pixel art style")
     print(f"CLIP Score: {result['clip_score']:.4f}")
     print(f"PickScore : {result['pick_score']:.4f}")
     print(f"Temporal Consistency: {result['Tem-Con']:.4f}")
     print(f"Embedding Distance: {result['embedding_distance']:.4f}")
+    print(f"Lag-k Temporal Consistency: {result['lagk_tc']:.4f}")

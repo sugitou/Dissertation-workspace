@@ -114,13 +114,13 @@ def make_horizontal_strip(
 if __name__ == "__main__":
     # 1) 等間隔抽出
     extract_uniform_frames(
-        "/scratch/rs02358/ved_dissertation/Datasets_from_Internet/UCF101/UCF-Benchmark/v_SkateBoarding_g01_c03.mp4",
-        "frames_out/Skate",
-        num_frames=4,
+        "/scratch/rs02358/ved_dissertation/CCEdit/outputs/tv2v/Thinking/SkateBoarding-anime2_prior0.1_cfg5.mp4",
+        "frames_out/Skate/results",
+        num_frames=8,
         prefix="frame")
 
     # 2) 横一列ストリップ生成（ファイル名ラベルなし）
-    make_horizontal_strip("frames_out/Skate/frame_*.png", "frames_out/Skate/Seq_Skate.png", target_height=120, pad=0, draw_filenames=False)
+    make_horizontal_strip("frames_out/Skate/results/frame_*.png", "frames_out/Skate/results/Seq_Skate.png", target_height=120, pad=0, draw_filenames=False)
 
     # 3) ラベル付きで作る場合
     # make_horizontal_strip("frames_out/*.png", "strip_labeled.png", target_height=360, pad=12, draw_filenames=True)
