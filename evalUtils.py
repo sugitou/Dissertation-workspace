@@ -260,9 +260,10 @@ def calculate_embedding_distance(frame_dir, prompt):
     return dist
 
 
-def evaluate_video(video_path, prompt, frame_dir="./frames", fps=1):
+def evaluate_video(video_path, prompt, frame_dir="./frames", fps=8):
     # Create a temporary directory for frames
     frame_dir = tempfile.mkdtemp(prefix="frames_")
+    lagk_tc_list = []
     
     try:
         extract_frames(video_path, frame_dir, fps=fps)
@@ -270,14 +271,16 @@ def evaluate_video(video_path, prompt, frame_dir="./frames", fps=1):
         pick_score = calculate_pickscore_video(frame_dir, prompt)
         temporal_consistency = calculate_temporal_consistency(frame_dir)
         embedding_distance = calculate_embedding_distance(frame_dir, prompt)
-        lagk_tc = calculate_temporal_consistency_lag(frame_dir, k=8)
+        for k in [1, 4, 8, 12, 16, 20, 24]:
+            lagk_tc = calculate_temporal_consistency_lag(frame_dir, k=k)
+            lagk_tc_list.append(lagk_tc)
 
         return {
             "clip_score": clip_score, 
             "pick_score": pick_score, 
             "Tem-Con": temporal_consistency, 
             "embedding_distance": embedding_distance,
-            "lagk_tc": lagk_tc
+            "lagk_tc": lagk_tc_list
         }
 
     finally:
@@ -292,9 +295,12 @@ if __name__ == "__main__":
         "a person running in a city",
         "a bird flying in the sky",
     ]
-    result = evaluate_video("/scratch/rs02358/ved_dissertation/CCEdit/outputs/tv2v/Thinking/Boxing-pixel_prior0.3_cfg9.mp4", "A man wearing white tank top practices boxing, punching a red heavy bag in his garage home gym, pixel art style")
+    
+    # result = evaluate_video("/scratch/rs02358/ved_dissertation/CCEdit/outputs/tv2v/Thinking/Boxing-pixel_prior0.3_cfg9.mp4", "A man wearing white tank top practices boxing, punching a red heavy bag in his garage home gym, pixel art style")
+    result = evaluate_video("/scratch/rs02358/ved_dissertation/Datasets_from_Internet/Boxing-pixel_10s.mp4", "A man wearing white tank top practices boxing, punching a red heavy bag in his garage home gym, pixel art style")
     print(f"CLIP Score: {result['clip_score']:.4f}")
     print(f"PickScore : {result['pick_score']:.4f}")
     print(f"Temporal Consistency: {result['Tem-Con']:.4f}")
     print(f"Embedding Distance: {result['embedding_distance']:.4f}")
-    print(f"Lag-k Temporal Consistency: {result['lagk_tc']:.4f}")
+    print(f"Lag-k Temporal Consistency: {[round(tc, 4) for tc in result['lagk_tc']]}")
+    # print(f"Lag-k Temporal Consistency: {result['lagk_tc']}")
