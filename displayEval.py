@@ -11,15 +11,42 @@ from datetime import datetime
 from evalUtils import evaluate_video, get_video_info #, convert_codec
 
 
+def _unpack_temcon(tem_list):
+    """
+    tem_list: list[float] expected length 7
+      [0] -> UI/Temporal Consistency
+      [1:] -> CSV columns in order: 4f, 8f, 12f, 16f, 20f, 24f
+    Returns:
+      ui_value (float), extras (dict)
+    """
+    # フォールバック（不足要素は None）
+    vals = list(tem_list) if isinstance(tem_list, (list, tuple)) else [tem_list]
+    while len(vals) < 7:
+        vals.append(None)
+
+    ui_value = vals[0]
+    extras = {
+        "TC per 4f":  vals[1],
+        "TC per 8f":  vals[2],
+        "TC per 12f": vals[3],
+        "TC per 16f": vals[4],
+        "TC per 20f": vals[5],
+        "TC per 24f": vals[6],
+    }
+    return ui_value, extras
+
+
 def run_evaluation(video_path, prompt, fps):
     # Run your evaluation function
     result = evaluate_video(video_path, prompt, fps=fps)
 
+    tem_ui, _extras = _unpack_temcon(result.get("Tem-Con", [None]))
+
     return (
         f"{result['clip_score']:.4f}",
         f"{result['pick_score']:.4f}",
-        f"{result['Tem-Con']:.4f}",
-        f"{result['embedding_distance']:.4f}"
+        (f"{tem_ui:.4f}" if tem_ui is not None else ""),   # guard None
+        f"{result['embedding_distance']:.4f}",
     )
 
 
@@ -42,21 +69,31 @@ def update_result_table(video, prompt, fps, history_df):
     # Get video information
     filename, duration, frame_count, actual_fps, resolution = get_video_info(video_path)
 
+    # --- CHANGED: unpack Tem-Con list ---
+    tem_ui, tem_extras = _unpack_temcon(result.get("Tem-Con", [None]))
+
     # Define a new row with the evaluation results
-    new_row = pd.DataFrame([{
+    base_row = {
         "Timestamp": timestamp,
         "Filename": filename,
         "Prompt": prompt,
         "CLIP Score": round(result["clip_score"], 4),
         "PickScore": round(result["pick_score"], 4),
-        "Temporal Consistency": round(result["Tem-Con"], 4),
+        "Temporal Consistency": (round(tem_ui, 4) if tem_ui is not None else None),
         "Embedding Distance": round(result["embedding_distance"], 4),
         "FPS (Video)": actual_fps,
         "FPS (Eval)": fps,
         "Frames": frame_count,
         "Resolution": resolution,
         "Duration": duration,
-    }])
+    }
+
+    # --- CHANGED: add extra TC columns (will be saved to CSV but not shown in UI table) ---
+    # round safely when value is not None
+    for k, v in tem_extras.items():
+        base_row[k] = (round(v, 4) if isinstance(v, (int, float)) else None)
+
+    new_row = pd.DataFrame([base_row])
 
     # Add the new row to the history DataFrame
     updated_df = pd.concat([history_df, new_row], ignore_index=True)
@@ -87,9 +124,11 @@ def apply_table_edits(edited_df):
 def clear_history():
     empty_df = pd.DataFrame(columns=[
         "Timestamp", "Filename", "Prompt",
-        "CLIP Score", "PickScore", "Temporal Consistency", 
+        "CLIP Score", "PickScore", "Temporal Consistency",
         "Embedding Distance", "FPS (Video)", "FPS (Eval)",
-        "Frames", "Resolution", "Duration"
+        "Frames", "Resolution", "Duration",
+        "TC per 4f", "TC per 8f", "TC per 12f",
+        "TC per 16f", "TC per 20f", "TC per 24f",
     ])
     return empty_df, empty_df
 
@@ -169,15 +208,19 @@ if __name__ == "__main__":
 
         history_df = gr.State(value=pd.DataFrame(columns=[
             "Timestamp", "Filename", "Prompt",
-            "CLIP Score", "PickScore", "Temporal Consistency", "Embedding Distance", 
-            "FPS (Video)", "FPS (Eval)", "Frames", "Resolution", "Duration"
+            "CLIP Score", "PickScore", "Temporal Consistency", "Embedding Distance",
+            "FPS (Video)", "FPS (Eval)", "Frames", "Resolution", "Duration",
+            "TC per 4f", "TC per 8f", "TC per 12f",
+            "TC per 16f", "TC per 20f", "TC per 24f",
         ]))
 
         result_table = gr.Dataframe(
             label="Evaluation History",
             headers=[
                 "Timestamp", "Filename", "Prompt",
-                "CLIP Score", "PickScore", "Temporal Consistency", 
+                "CLIP Score", "PickScore",
+                "Temporal Consistency",  
+                "TC per 4f", "TC per 8f", "TC per 12f", "TC per 16f", "TC per 20f", "TC per 24f",
                 "Embedding Distance", "FPS (Video)", "FPS (Eval)",
                 "Frames", "Resolution", "Duration"
             ],
