@@ -3,8 +3,7 @@ import os
 
 # 入力動画のパスをリストに格納
 video_list = [
-    "/scratch/rs02358/ved_dissertation/CCEdit/outputs/tv2v/HandstandWalking/revAnimated_v2Rebirth/result/mp4/animation-0001.mp4",
-    "/scratch/rs02358/ved_dissertation/Datasets_from_Internet/UCF101/UCF-Benchmark/v_HandstandWalking_g14_c03.mp4",
+    "For failure/A_young_girl_with_long_blonde_hair_is_applying_lipstick_to_her_lips_in_a_bathroom_785490.mp4",
 ]
 
 # 保存先フォルダ

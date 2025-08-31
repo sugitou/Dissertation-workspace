@@ -114,21 +114,13 @@ def make_horizontal_strip(
 if __name__ == "__main__":
     # 1) 等間隔抽出
     extract_uniform_frames(
-        "/scratch/rs02358/ved_dissertation/CCEdit/outputs/tv2v/Thinking/CCEdit-20250821T143656Z-1-001/CCEdit/Boxing/15s.mp4",
-        # "/scratch/rs02358/ved_dissertation/MotionDirector/outputs/Thinking/A_crystal_skeleton_is_brushing_its_teeth_in_a_bathroom_785490_0.3.mp4",
-        # "/scratch/rs02358/ved_dissertation/MotionDirector/outputs/Thinking/A_focused_woman_carefully_applies_face_cream_with_gentle_motions_in_her_bathroom_785490_0.3.mp4",
-        # "/scratch/rs02358/ved_dissertation/MotionDirector/outputs/Thinking/A_man_is_practising_his_golf_swing_in_Times_Square_New_York_785490_0.5.mp4",
-        # "/scratch/rs02358/ved_dissertation/MotionDirector/outputs/Thinking/A_man_wearing_white_tank_top_practices_cooking_flipping_pancakes_in_his_garage_home_gym_785490_0.1.mp4",
-        # "/scratch/rs02358/ved_dissertation/MotionDirector/outputs/Thinking/A_muscular_alien_performs_an_impressive_snatch_lifting_a_heavy_barbell_overhead_in_a_gym_785490_0.3.mp4",
-        # "/scratch/rs02358/ved_dissertation/MotionDirector/outputs/Thinking/A_woman_in_a_maid's_costume_ascends_a_challenging_indoor_climbing_wall_with_a_follow_cinematic_shot_785490_0.1.mp4",
-        # "/scratch/rs02358/ved_dissertation/MotionDirector/outputs/Thinking/An_athletic_person_holds_a_steady_handstand_on_a_sandy_beach_under_a_few_white_cloud_sky_785490_0.3.mp4",
-        # "/scratch/rs02358/ved_dissertation/MotionDirector/outputs/Thinking/Two_focused_fencers_in_white_uniforms_duel_on_a_strip_inside_a_business_office_785490.mp4",
-        "frames_out/Boxing/results-long",
-        num_frames=8,
+        "For failure/Hand_failure_CCEdit_2.5.7.mp4",
+        "frames_out/Hand",
+        num_frames=4,
         prefix="frame")
 
     # 2) 横一列ストリップ生成（ファイル名ラベルなし）
-    make_horizontal_strip("frames_out/Boxing/results-long/frame_*.png", "frames_out/Boxing/results-long/Seq_Boxing.png", target_height=120, pad=0, draw_filenames=False)
+    make_horizontal_strip("frames_out/Hand/frame_*.png", "frames_out/Hand/Seq_Hand.png", target_height=120, pad=0, draw_filenames=False)
 
     # 3) ラベル付きで作る場合
     # make_horizontal_strip("frames_out/*.png", "strip_labeled.png", target_height=360, pad=12, draw_filenames=True)
