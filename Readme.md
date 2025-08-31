@@ -1,11 +1,11 @@
 # Workspace Repository
 
-This repository contains a collection of auxiliary Python scripts created in support of my MSc dissertation project on **Video Editing using Diffusion Models**.  
-The scripts are not intended as a complete framework, but rather as standalone utilities that facilitated different stages of the research workflow.
+This repository contains supplementary materials and Python scripts created in support of my MSc dissertation project on **Video Editing using Diffusion Models**.  
+It includes both code utilities and reference data used throughout the research workflow.
 
 ## Contents
 
-The scripts are broadly grouped into three categories:
+The repository is broadly organised into the following categories:
 
 1. **Preprocessing scripts**  
    - Utilities for preparing and organising datasets.  
@@ -18,11 +18,15 @@ The scripts are broadly grouped into three categories:
 3. **Visualisation scripts**  
    - Scripts used for generating plots, figures, and visual materials presented in the dissertation.  
 
+4. **Reference videos and prompts**  
+   - Example videos and their associated text prompts used during experimentation.  
+   - Provided for documentation and reproducibility of the dissertation experiments.
+
 ## Notes
 
 - The repository is shared primarily for documentation and reproducibility purposes.  
-- Scripts may require adjustment before reuse in other projects.  
+- Scripts or data may require adjustment before reuse in other projects.  
 
 ## License
 
-This repository is provided *as is* for academic reference. Please cite appropriately if you reuse or adapt the code for your own work.  
+This repository is provided *as is* for academic reference. Please cite appropriately if you reuse or adapt the code or data for your own work.  
