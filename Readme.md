@@ -1,6 +1,6 @@
 # Workspace Repository
 
-This repository contains supplementary materials and Python scripts created in support of my MSc dissertation project on **Video Editing using Diffusion Models**.  
+This repository contains supplementary materials and Python scripts created in support of my MSc dissertation project on **"Video Editing using Diffusion Models: Techniques and Challenges" (University of Surrey, 2025)**.  
 It includes both code utilities and reference data used throughout the research workflow.
 
 ## Contents
